@@ -122,7 +122,7 @@ def build_data_train(path='.', filepath='labeledTrainData.tsv', vocab_file=None,
                     _ratings.append(item)
                     _counts.append(0)
 
-        ratings,counts = _ratings, _counts
+            ratings,counts = _ratings, _counts
         reviews_text.attrs['vocab_size'] = vocab_size
         reviews_text.attrs['nrows'] = nsamples
         reviews_text.attrs['nclass'] = nclass
