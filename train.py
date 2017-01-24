@@ -40,7 +40,7 @@ from neon.initializers import Uniform, GlorotUniform, Array  # noqa
 from neon.layers import GeneralizedCost, Affine, Dropout, LookupTable, LSTM, RecurrentSum  # noqa
 from neon.models import Model  # noqa
 from neon.optimizers import Adagrad  # noqa
-from neon.transforms import Logistic, Tanh, Softmax, CrossEntropyMulti, Accuracy  # noqa
+from neon.transforms import Logistic, Tanh, Softmax, CrossEntropyMulti, Accuracy, PrecisionRecall  # noqa
 from neon.util.argparser import NeonArgparser, extract_valid_args  # noqa
 from neon.util.compat import pickle  # noqa
 from neon.callbacks.callbacks import Callbacks  # noqa
@@ -185,7 +185,7 @@ layers = [
 
 # set the cost, metrics, optimizer
 cost = GeneralizedCost(costfunc=CrossEntropyMulti(usebits=True))
-metric = Accuracy()
+metric = PrecisionRecall(num_classes=8)
 model = Model(layers=layers)
 optimizer = Adagrad(learning_rate=0.01)
 
