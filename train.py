@@ -135,10 +135,10 @@ be = gen_backend(**extract_valid_args(args, gen_backend))
 
 # get the preprocessed and tokenized data
 train_file_h5, fname_vocab = build_data_train(filepath=args.train_file,
-                                              vocab_file=args.vocab_file, skip_headers=False, train_ratio=0.9)
+                                              vocab_file="{}.vocab".format(args.test_file), skip_headers=False, train_ratio=0.9)
 
 test_file_h5, _ = build_data_train(filepath=args.test_file,
-                                              vocab_file=args.vocab_file, skip_headers=False, train_ratio=1)
+                                              vocab_file="{}.vocab".format(args.test_file), skip_headers=False, train_ratio=0.98)
 
 
 # play around with google-news word vectors for init
