@@ -80,7 +80,7 @@ def get_google_word2vec_W(fname, vocab, vocab_size=1000000, index_from=3):
             wrd_id = vocab[word] + index_from
             if wrd_id < vocab_size:
                 W[wrd_id] = np.fromstring(
-                    f.read(binary_len).decode(encoding="ISO-8859-1"), dtype='float32')
+                    f.read(binary_len), dtype='float32')
                 found_words[wrd_id] = 1
         else:
             f.read(binary_len)
