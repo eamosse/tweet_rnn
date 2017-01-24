@@ -182,7 +182,7 @@ def parseData(file):
 #parse the training file
 nclass,train_set, valid_set = parseData(train_file_h5)
 #parse the test file
-__,test_set,___ = parseData(train_file_h5)
+__,test_set,___ = parseData(test_file_h5)
 
 
 # initialization
