@@ -123,8 +123,8 @@ args = parser.parse_args()
 hidden_size = 128
 embedding_dim = 128
 vocab_size = 20000
-sentence_length = 128
-batch_size = 32
+sentence_length = 24
+batch_size = 2048
 gradient_limit = 5
 clip_gradients = True
 num_epochs = args.epochs
@@ -170,7 +170,7 @@ clazz = reviews.attrs['class_distribution']
 
 #parse the test file
 test_file_h5, _ = build_data_train(filepath=args.test_file,
-                                              vocab_file="{}.vocab".format(args.test_file), skip_headers=False, train_ratio=0.1, clazz=clazz)
+                                              vocab_file="{}.vocab".format(args.test_file), skip_headers=False, train_ratio=1.0, clazz=clazz)
 test_set= parseData(test_file_h5, valid=False)
 
 # play around with google-news word vectors for init

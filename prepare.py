@@ -23,6 +23,7 @@ from neon.data.text_preprocessing import clean_string  # noqa
 from neon.util.compat import pickle  # noqa
 
 
+
 def build_data_train(path='.', filepath='labeledTrainData.tsv', vocab_file=None,
                      vocab=None, skip_headers=True, train_ratio=0.8, clazz=[]):
     """
