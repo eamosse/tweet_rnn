@@ -21,6 +21,7 @@ import os  # noqa
 from neon import logger as neon_logger  # noqa
 from neon.data.text_preprocessing import clean_string  # noqa
 from neon.util.compat import pickle  # noqa
+from helper import FileHelper
 
 
 
@@ -38,6 +39,9 @@ def build_data_train(path='.', filepath='labeledTrainData.tsv', vocab_file=None,
     Datasets may fit entirely in memory as numpy as array
 
     """
+
+    if not os.path.exists(filepath):
+        FileHelper.generateDataFile()
 
     fname_h5 = filepath + '.h5'
     if vocab_file is None:

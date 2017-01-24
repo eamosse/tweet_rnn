@@ -47,6 +47,8 @@ from neon.callbacks.callbacks import Callbacks  # noqa
 from neon.data.text_preprocessing import get_paddedXY  # noqa
 import h5py  # noqa
 import numpy as np
+import os
+import preprocessing
 
 def get_google_word2vec_W(fname, vocab, vocab_size=1000000, index_from=3):
     """
@@ -98,13 +100,23 @@ def get_google_word2vec_W(fname, vocab, vocab_size=1000000, index_from=3):
 
 # parse the command line arguments
 parser = NeonArgparser(__doc__)
-parser.add_argument('-f', '--train_file',
+parser.add_argument('-o', '--ontology',
+                    default='dbpedia',
+                    help='input movie review file')
+
+"""
+parser.add_argument('-t', '--type',
+                    default='generic',
+                    help='input movie review file')
+
+parser.add_argument('-train', '--train_file',
                     default='dbpedia_generic_train.tsv',
                     help='input movie review file')
 
-parser.add_argument('-t', '--test_file',
+parser.add_argument('-test', '--test_file',
                     default='dbpedia_generic_test.tsv',
                     help='input movie review file')
+"""
 
 parser.add_argument('--vocab_file',
                     default='dbpedia_generic_train.tsv.vocab',
@@ -160,17 +172,22 @@ def parseData(_file, valid=True):
 # setup backend
 be = gen_backend(**extract_valid_args(args, gen_backend))
 
+
+train_file, test_file = preprocessing.create(args.ontology, args.type)
+
+
+
 # get the preprocessed and tokenized data
-train_file_h5, fname_vocab = build_data_train(filepath=args.train_file,
-                                              vocab_file="{}.vocab".format(args.train_file), skip_headers=False, train_ratio=0.9)
+train_file_h5, fname_vocab = build_data_train(filepath=train_file,
+                                              vocab_file="{}.vocab".format(train_file), skip_headers=False, train_ratio=0.9)
 #parse the training file
 reviews,train_set, valid_set = parseData(train_file_h5)
 clazz = reviews.attrs['class_distribution']
 
 
 #parse the test file
-test_file_h5, _ = build_data_train(filepath=args.test_file,
-                                              vocab_file="{}.vocab".format(args.test_file), skip_headers=False, train_ratio=1.0, clazz=clazz)
+test_file_h5, _ = build_data_train(filepath=test_file,
+                                              vocab_file="{}.vocab".format(test_file), skip_headers=False, train_ratio=1.0, clazz=clazz)
 test_set= parseData(test_file_h5, valid=False)
 
 # play around with google-news word vectors for init
