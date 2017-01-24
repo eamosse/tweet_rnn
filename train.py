@@ -130,31 +130,6 @@ clip_gradients = True
 num_epochs = args.epochs
 embedding_update = True
 
-# setup backend
-be = gen_backend(**extract_valid_args(args, gen_backend))
-
-# get the preprocessed and tokenized data
-train_file_h5, fname_vocab = build_data_train(filepath=args.train_file,
-                                              vocab_file="{}.vocab".format(args.test_file), skip_headers=False, train_ratio=0.9)
-
-test_file_h5, _ = build_data_train(filepath=args.test_file,
-                                              vocab_file="{}.vocab".format(args.test_file), skip_headers=False, train_ratio=0.98)
-
-
-# play around with google-news word vectors for init
-if args.use_w2v:
-    w2v_file = args.w2v
-    vocab, rev_vocab = pickle.load(open(fname_vocab, 'rb'))
-    init_emb_np, embedding_dim, vocab_size = get_google_word2vec_W(w2v_file, vocab,
-                                                          vocab_size=vocab_size, index_from=3)
-    neon_logger.display(
-        "Done loading the Word2Vec vectors: embedding size - {} {}".format(embedding_dim,vocab_size))
-    embedding_update = True
-    init_emb = Array(val=be.array(init_emb_np))
-else:
-    init_emb = Uniform(-0.1 / embedding_dim, 0.1 / embedding_dim)
-
-
 def parseData(file):
     #global nclass, train_set, valid_set
     h5f = h5py.File(file, 'r')
@@ -176,14 +151,36 @@ def parseData(file):
         X, y, vocab_size=vocab_size, sentence_length=sentence_length)
     valid_set = ArrayIterator(X_valid, y_valid, nclass=nclass)
 
-    return nclass,train_set,valid_set
+    return h5f,train_set,valid_set
 
+# setup backend
+be = gen_backend(**extract_valid_args(args, gen_backend))
 
+# get the preprocessed and tokenized data
+train_file_h5, fname_vocab = build_data_train(filepath=args.train_file,
+                                              vocab_file="{}.vocab".format(args.test_file), skip_headers=False, train_ratio=0.9)
 #parse the training file
-nclass,train_set, valid_set = parseData(train_file_h5)
+reviews,train_set, valid_set = parseData(train_file_h5)
+clazz = reviews.attrs['class_distribution']
+
+
 #parse the test file
+test_file_h5, _ = build_data_train(filepath=args.test_file,
+                                              vocab_file="{}.vocab".format(args.test_file), skip_headers=False, train_ratio=0.98, clazz=clazz)
 __,test_set,___ = parseData(test_file_h5)
 
+# play around with google-news word vectors for init
+if args.use_w2v:
+    w2v_file = args.w2v
+    vocab, rev_vocab = pickle.load(open(fname_vocab, 'rb'))
+    init_emb_np, embedding_dim, vocab_size = get_google_word2vec_W(w2v_file, vocab,
+                                                          vocab_size=vocab_size, index_from=3)
+    neon_logger.display(
+        "Done loading the Word2Vec vectors: embedding size - {} {}".format(embedding_dim,vocab_size))
+    embedding_update = True
+    init_emb = Array(val=be.array(init_emb_np))
+else:
+    init_emb = Uniform(-0.1 / embedding_dim, 0.1 / embedding_dim)
 
 # initialization
 init_glorot = GlorotUniform()
@@ -197,7 +194,7 @@ layers = [
          reset_cells=True),
     RecurrentSum(),
     Dropout(keep=0.5),
-    Affine(nclass, init_glorot, bias=init_glorot, activation=Softmax())
+    Affine(len(clazz), init_glorot, bias=init_glorot, activation=Softmax())
 ]
 
 # set the cost, metrics, optimizer
