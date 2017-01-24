@@ -24,7 +24,7 @@ from neon.util.compat import pickle  # noqa
 
 
 def build_data_train(path='.', filepath='labeledTrainData.tsv', vocab_file=None,
-                     vocab=None, skip_headers=True, train_ratio=0.8, clazz=None):
+                     vocab=None, skip_headers=True, train_ratio=0.8, clazz=[]):
     """
     Loads the data file and spits out a h5 file with record of
     {y, review_text, review_int}
@@ -43,6 +43,9 @@ def build_data_train(path='.', filepath='labeledTrainData.tsv', vocab_file=None,
         fname_vocab = filepath + '.vocab'
     else:
         fname_vocab = vocab_file
+
+
+    print(fname_h5, fname_vocab)
 
     if not os.path.exists(fname_h5) or not os.path.exists(fname_vocab):
         # create the h5 store - NOTE: hdf5 is row-oriented store and we slice rows
@@ -109,20 +112,22 @@ def build_data_train(path='.', filepath='labeledTrainData.tsv', vocab_file=None,
         sen_len, sen_len_counts = np.unique(
             reviews_text['num_words'][:nsamples], return_counts=True)
         vocab_size = len(vocab)
-        nclass = len(ratings)
+
 
         _ratings, _counts = [], []
 
-        if clazz:
-            for index, item in enumerate(clazz):
-                if item in _ratings:
-                    _ratings.append(ratings[index])
-                    _counts.append(counts[index])
-                else:
-                    _ratings.append(item)
+        if len(clazz) > 0:
+            for index in range(len(clazz)):
+                if index not in ratings:
+                    _ratings.append(index)
                     _counts.append(0)
+                else:
+                    _ratings.append(index)
+                    _counts.append(clazz[index])
 
             ratings,counts = _ratings, _counts
+
+        nclass = len(ratings)
         reviews_text.attrs['vocab_size'] = vocab_size
         reviews_text.attrs['nrows'] = nsamples
         reviews_text.attrs['nclass'] = nclass

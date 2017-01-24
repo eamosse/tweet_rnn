@@ -130,9 +130,11 @@ clip_gradients = True
 num_epochs = args.epochs
 embedding_update = True
 
-def parseData(file):
+def parseData(_file, valid=True):
+    print(_file)
+
     #global nclass, train_set, valid_set
-    h5f = h5py.File(file, 'r')
+    h5f = h5py.File(_file, 'r')
     reviews, h5train, h5valid = h5f['reviews'], h5f['train'], h5f['valid']
     ntrain, nvalid, nclass = reviews.attrs[
                                  'ntrain'], reviews.attrs['nvalid'], reviews.attrs['nclass']
@@ -144,21 +146,23 @@ def parseData(file):
         X, y, vocab_size=vocab_size, sentence_length=sentence_length)
     train_set = ArrayIterator(X_train, y_train, nclass=nclass)
     # make valid dataset
-    Xy = h5valid[:nvalid]
-    X = [xy[1:] for xy in Xy]
-    y = [xy[0] for xy in Xy]
-    X_valid, y_valid = get_paddedXY(
-        X, y, vocab_size=vocab_size, sentence_length=sentence_length)
-    valid_set = ArrayIterator(X_valid, y_valid, nclass=nclass)
-
-    return h5f,train_set,valid_set
+    if valid:
+        Xy = h5valid[:nvalid]
+        X = [xy[1:] for xy in Xy]
+        y = [xy[0] for xy in Xy]
+        X_valid, y_valid = get_paddedXY(
+            X, y, vocab_size=vocab_size, sentence_length=sentence_length)
+        valid_set = ArrayIterator(X_valid, y_valid, nclass=nclass)
+        return reviews,train_set,valid_set
+    else:
+        return train_set
 
 # setup backend
 be = gen_backend(**extract_valid_args(args, gen_backend))
 
 # get the preprocessed and tokenized data
 train_file_h5, fname_vocab = build_data_train(filepath=args.train_file,
-                                              vocab_file="{}.vocab".format(args.test_file), skip_headers=False, train_ratio=0.9)
+                                              vocab_file="{}.vocab".format(args.train_file), skip_headers=False, train_ratio=0.9)
 #parse the training file
 reviews,train_set, valid_set = parseData(train_file_h5)
 clazz = reviews.attrs['class_distribution']
@@ -166,8 +170,8 @@ clazz = reviews.attrs['class_distribution']
 
 #parse the test file
 test_file_h5, _ = build_data_train(filepath=args.test_file,
-                                              vocab_file="{}.vocab".format(args.test_file), skip_headers=False, train_ratio=0.98, clazz=clazz)
-__,test_set,___ = parseData(test_file_h5)
+                                              vocab_file="{}.vocab".format(args.test_file), skip_headers=False, train_ratio=0.1, clazz=clazz)
+test_set= parseData(test_file_h5, valid=False)
 
 # play around with google-news word vectors for init
 if args.use_w2v:
