@@ -44,8 +44,57 @@ from neon.transforms import Logistic, Tanh, Softmax, CrossEntropyMulti, Accuracy
 from neon.util.argparser import NeonArgparser, extract_valid_args  # noqa
 from neon.util.compat import pickle  # noqa
 from neon.callbacks.callbacks import Callbacks  # noqa
-from neon.data.text_preprocessing import get_paddedXY, get_google_word2vec_W  # noqa
+from neon.data.text_preprocessing import get_paddedXY  # noqa
 import h5py  # noqa
+import numpy as np
+
+def get_google_word2vec_W(fname, vocab, vocab_size=1000000, index_from=3):
+    """
+    Extract the embedding matrix from the given word2vec binary file and use this
+    to initalize a new embedding matrix for words found in vocab.
+
+    Conventions are to save indices for pad, oov, etc.:
+    index 0: pad
+    index 1: oov (or <unk>)
+    index 2: <eos>. But often cases, the <eos> has already been in the
+    preprocessed data, so no need to save an index for <eos>
+    """
+    f = open(fname, 'rb')
+    header = f.readline()
+    vocab1_size, embedding_dim = list(map(int, header.split()))
+    binary_len = np.dtype('float32').itemsize * embedding_dim
+    vocab_size = min(len(vocab) + index_from, vocab_size)
+    W = np.zeros((vocab_size, embedding_dim))
+
+    found_words = {}
+    for i, line in enumerate(range(vocab1_size)):
+        word = []
+        while True:
+            ch = f.read(1)
+            if ch == b' ':
+                word = ''.join(word)
+                break
+            if ch != b'\n':
+                word.append(ch.decode(encoding="ISO-8859-1"))
+        if word in vocab:
+            wrd_id = vocab[word] + index_from
+            if wrd_id < vocab_size:
+                W[wrd_id] = np.fromstring(
+                    f.read(binary_len).decode(encoding="ISO-8859-1"), dtype='float32')
+                found_words[wrd_id] = 1
+        else:
+            f.read(binary_len)
+
+    cnt = 0
+    for wrd_id in range(vocab_size):
+        if wrd_id not in found_words:
+            W[wrd_id] = np.random.uniform(-0.25, 0.25, embedding_dim)
+            cnt += 1
+    assert cnt + len(found_words) == vocab_size
+
+    f.close()
+
+    return W, embedding_dim, vocab_size
 
 # parse the command line arguments
 parser = NeonArgparser(__doc__)
@@ -86,10 +135,10 @@ fname_h5, fname_vocab = build_data_train(filepath=args.review_file,
 if args.use_w2v:
     w2v_file = args.w2v
     vocab, rev_vocab = pickle.load(open(fname_vocab, 'rb'))
-    init_emb_np, embedding_dim, _ = get_google_word2vec_W(w2v_file, vocab,
+    init_emb_np, embedding_dim, vocab_size = get_google_word2vec_W(w2v_file, vocab,
                                                           vocab_size=vocab_size, index_from=3)
     neon_logger.display(
-        "Done loading the Word2Vec vectors: embedding size - {}".format(embedding_dim))
+        "Done loading the Word2Vec vectors: embedding size - {} {}".format(embedding_dim,vocab_size))
     embedding_update = True
     init_emb = Array(val=be.array(init_emb_np))
 else:
