@@ -98,14 +98,21 @@ def get_google_word2vec_W(fname, vocab, vocab_size=1000000, index_from=3):
 
 # parse the command line arguments
 parser = NeonArgparser(__doc__)
-parser.add_argument('-f', '--review_file',
+parser.add_argument('-f', '--train_file',
                     default='dbpedia_generic_train.tsv',
                     help='input movie review file')
+
+parser.add_argument('-t', '--test_file',
+                    default='dbpedia_generic_test.tsv',
+                    help='input movie review file')
+
 parser.add_argument('--vocab_file',
                     default='dbpedia_generic_train.tsv.vocab',
                     help='output file to save the processed vocabulary')
+
 parser.add_argument('--use_w2v', action='store_true',
                     help='use downloaded Google Word2Vec')
+
 parser.add_argument('--w2v',
                     default='dbpedia_generic.bin',
                     help='the pre-built Word2Vec')
@@ -127,8 +134,11 @@ embedding_update = True
 be = gen_backend(**extract_valid_args(args, gen_backend))
 
 # get the preprocessed and tokenized data
-fname_h5, fname_vocab = build_data_train(filepath=args.review_file,
-                                         vocab_file=args.vocab_file, skip_headers=True)
+train_file_h5, fname_vocab = build_data_train(filepath=args.train_file,
+                                              vocab_file=args.vocab_file, skip_headers=False, train_ratio=0.9)
+
+test_file_h5, _ = build_data_train(filepath=args.test_file,
+                                              vocab_file=args.vocab_file, skip_headers=False, train_ratio=1)
 
 
 # play around with google-news word vectors for init
@@ -145,27 +155,34 @@ else:
     init_emb = Uniform(-0.1 / embedding_dim, 0.1 / embedding_dim)
 
 
-h5f = h5py.File(fname_h5, 'r')
-reviews, h5train, h5valid = h5f['reviews'], h5f['train'], h5f['valid']
-ntrain, nvalid, nclass = reviews.attrs[
-    'ntrain'], reviews.attrs['nvalid'], reviews.attrs['nclass']
+def parseData(file):
+    #global nclass, train_set, valid_set
+    h5f = h5py.File(file, 'r')
+    reviews, h5train, h5valid = h5f['reviews'], h5f['train'], h5f['valid']
+    ntrain, nvalid, nclass = reviews.attrs[
+                                 'ntrain'], reviews.attrs['nvalid'], reviews.attrs['nclass']
+    # make train dataset
+    Xy = h5train[:ntrain]
+    X = [xy[1:] for xy in Xy]
+    y = [xy[0] for xy in Xy]
+    X_train, y_train = get_paddedXY(
+        X, y, vocab_size=vocab_size, sentence_length=sentence_length)
+    train_set = ArrayIterator(X_train, y_train, nclass=nclass)
+    # make valid dataset
+    Xy = h5valid[:nvalid]
+    X = [xy[1:] for xy in Xy]
+    y = [xy[0] for xy in Xy]
+    X_valid, y_valid = get_paddedXY(
+        X, y, vocab_size=vocab_size, sentence_length=sentence_length)
+    valid_set = ArrayIterator(X_valid, y_valid, nclass=nclass)
+
+    return nclass,train_set,valid_set
 
 
-# make train dataset
-Xy = h5train[:ntrain]
-X = [xy[1:] for xy in Xy]
-y = [xy[0] for xy in Xy]
-X_train, y_train = get_paddedXY(
-    X, y, vocab_size=vocab_size, sentence_length=sentence_length)
-train_set = ArrayIterator(X_train, y_train, nclass=nclass)
-
-# make valid dataset
-Xy = h5valid[:nvalid]
-X = [xy[1:] for xy in Xy]
-y = [xy[0] for xy in Xy]
-X_valid, y_valid = get_paddedXY(
-    X, y, vocab_size=vocab_size, sentence_length=sentence_length)
-valid_set = ArrayIterator(X_valid, y_valid, nclass=nclass)
+#parse the training file
+nclass,train_set, valid_set = parseData(train_file_h5)
+#parse the test file
+__,test_set,___ = parseData(train_file_h5)
 
 
 # initialization
@@ -201,4 +218,5 @@ model.fit(train_set,
 
 # eval model
 neon_logger.display("Train Accuracy - {}".format(100 * model.eval(train_set, metric=metric)))
-neon_logger.display("Test Accuracy - {}".format(100 * model.eval(valid_set, metric=metric)))
+neon_logger.display("Valid Accuracy - {}".format(100 * model.eval(valid_set, metric=metric)))
+neon_logger.display("Test Accuracy - {}".format(100 * model.eval(test_set, metric=metric)))
