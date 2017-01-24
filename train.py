@@ -100,15 +100,15 @@ def get_google_word2vec_W(fname, vocab, vocab_size=1000000, index_from=3):
 
 # parse the command line arguments
 parser = NeonArgparser(__doc__)
-parser.add_argument('-o', '--ontology',
+parser.add_argument('-onto', '--ontology',
                     default='dbpedia',
                     help='input movie review file')
 
-"""
+
 parser.add_argument('-t', '--type',
                     default='generic',
                     help='input movie review file')
-
+"""
 parser.add_argument('-train', '--train_file',
                     default='dbpedia_generic_train.tsv',
                     help='input movie review file')
