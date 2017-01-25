@@ -37,7 +37,8 @@ from neon import logger as neon_logger  # noqa
 from neon.backends import gen_backend  # noqa
 from neon.data import ArrayIterator  # noqa
 from neon.initializers import Uniform, GlorotUniform, Array  # noqa
-from neon.layers import GeneralizedCost, Affine, Dropout, LookupTable, LSTM, RecurrentSum  # noqa
+from neon.layers import  (GeneralizedCost, LSTM, Affine, Dropout, LookupTable,
+                         RecurrentSum, Recurrent, DeepBiLSTM, DeepBiRNN)  # noqa
 from neon.models import Model  # noqa
 from neon.optimizers import Adagrad  # noqa
 from neon.transforms import Logistic, Tanh, Softmax, CrossEntropyMulti, Accuracy, PrecisionRecall  # noqa
@@ -100,23 +101,24 @@ def get_google_word2vec_W(fname, vocab, vocab_size=1000000, index_from=3):
 
 # parse the command line arguments
 parser = NeonArgparser(__doc__)
+
 parser.add_argument('-onto', '--ontology',
                     default='dbpedia',
-                    help='input movie review file')
+                    help='Replacement ontology')
 
 
 parser.add_argument('-t', '--type',
                     default='generic',
-                    help='input movie review file')
-"""
-parser.add_argument('-train', '--train_file',
-                    default='dbpedia_generic_train.tsv',
-                    help='input movie review file')
+                    help='Replacement strategy')
 
-parser.add_argument('-test', '--test_file',
-                    default='dbpedia_generic_test.tsv',
-                    help='input movie review file')
-"""
+parser.add_argument('-n', '--clazz',
+                    default=2,
+                    choices = [2,8],
+                    help='Model to train 2 = Binary, 8 = Multiclass')
+
+parser.add_argument('--rlayer_type', default='lstm',
+                    choices=['bilstm', 'lstm', 'birnn', 'bibnrnn', 'rnn'],
+                    help='type of recurrent layer to use (lstm, bilstm, rnn, birnn, bibnrnn)')
 
 parser.add_argument('--vocab_file',
                     default='dbpedia_generic_train.tsv.vocab',
@@ -173,7 +175,7 @@ def parseData(_file, valid=True):
 be = gen_backend(**extract_valid_args(args, gen_backend))
 
 
-train_file, test_file = preprocessing.create(args.ontology, args.type)
+train_file, test_file = preprocessing.create(args.ontology, args.type, args.clazz)
 
 
 
@@ -204,37 +206,54 @@ else:
     init_emb = Uniform(-0.1 / embedding_dim, 0.1 / embedding_dim)
 
 # initialization
-init_glorot = GlorotUniform()
+g_uni = GlorotUniform()
+rlayer = None
 
+if args.rlayer_type == 'lstm':
+    rlayer = LSTM(hidden_size, g_uni, activation=Tanh(),
+                  gate_activation=Logistic(), reset_cells=True)
+elif args.rlayer_type == 'bilstm':
+    rlayer = DeepBiLSTM(hidden_size, g_uni, activation=Tanh(), depth=1,
+                        gate_activation=Logistic(), reset_cells=True)
+elif args.rlayer_type == 'rnn':
+    rlayer = Recurrent(hidden_size, g_uni, activation=Tanh(), reset_cells=True)
+elif args.rlayer_type == 'birnn':
+    rlayer = DeepBiRNN(hidden_size, g_uni, activation=Tanh(),
+                       depth=1, reset_cells=True, batch_norm=False)
+elif args.rlayer_type == 'bibnrnn':
+    rlayer = DeepBiRNN(hidden_size, g_uni, activation=Tanh(),
+                       depth=1, reset_cells=True, batch_norm=True)
 
-# define layers
-layers = [
-    LookupTable(vocab_size=vocab_size, embedding_dim=embedding_dim, init=init_emb,
-                pad_idx=0, update=embedding_update),
-    LSTM(hidden_size, init_glorot, activation=Tanh(), gate_activation=Logistic(),
-         reset_cells=True),
-    RecurrentSum(),
-    Dropout(keep=0.5),
-    Affine(len(clazz), init_glorot, bias=init_glorot, activation=Softmax())
-]
+if rlayer:
+    # define layers
+    layers = [
+        LookupTable(vocab_size=vocab_size, embedding_dim=embedding_dim, init=init_emb,
+                    pad_idx=0, update=embedding_update),
+        rlayer,
+        RecurrentSum(),
+        Dropout(keep=0.5),
+        Affine(len(clazz), g_uni, bias=g_uni, activation=Softmax())
+    ]
 
-# set the cost, metrics, optimizer
-cost = GeneralizedCost(costfunc=CrossEntropyMulti(usebits=True))
-metric = PrecisionRecall(num_classes=8)
-model = Model(layers=layers)
-optimizer = Adagrad(learning_rate=0.01)
+    # set the cost, metrics, optimizer
+    cost = GeneralizedCost(costfunc=CrossEntropyMulti(usebits=True))
+    metric = PrecisionRecall(num_classes=len(clazz))
+    model = Model(layers=layers)
+    optimizer = Adagrad(learning_rate=0.01)
 
-# configure callbacks
-callbacks = Callbacks(model, eval_set=valid_set, **args.callback_args)
+    # configure callbacks
+    callbacks = Callbacks(model, eval_set=valid_set, **args.callback_args)
 
-# train model
-model.fit(train_set,
-          optimizer=optimizer,
-          num_epochs=num_epochs,
-          cost=cost,
-          callbacks=callbacks)
+    # train model
+    model.fit(train_set,
+              optimizer=optimizer,
+              num_epochs=num_epochs,
+              cost=cost,
+              callbacks=callbacks)
 
-# eval model
-neon_logger.display("Train Accuracy - {}".format(100 * model.eval(train_set, metric=metric)))
-neon_logger.display("Valid Accuracy - {}".format(100 * model.eval(valid_set, metric=metric)))
-neon_logger.display("Test Accuracy - {}".format(100 * model.eval(test_set, metric=metric)))
+    # eval model
+    neon_logger.display("Train Accuracy - {}".format(100 * model.eval(train_set, metric=metric)))
+    neon_logger.display("Valid Accuracy - {}".format(100 * model.eval(valid_set, metric=metric)))
+    neon_logger.display("Test Accuracy - {}".format(100 * model.eval(test_set, metric=metric)))
+else:
+    print("No Layer provided...")

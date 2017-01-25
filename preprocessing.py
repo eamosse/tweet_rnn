@@ -4,13 +4,14 @@ from helper.nerd import NERD
 classes = []
 
 
-def create(ontology, type):
-    train_file = "{}_{}_train.tsv".format(ontology,type)
-    test_file = "{}_{}_test.tsv".format(ontology, type)
+def create(ontology, type, nclass=8):
+    classes = FileHelper.categories if nclass==8 else FileHelper.binaries
+    train_file = "{}_{}_{}_train.tsv".format(ontology,type, nclass)
+    test_file = "{}_{}_{}_test.tsv".format(ontology, type, nclass)
     if not os.path.exists(train_file):
-        FileHelper.createTrainFile(FileHelper.categories, directory="train/{}/{}".format(ontology,type), name=train_file)
+        FileHelper.createTrainFile(classes, directory="train/{}/{}".format(ontology,type), name=train_file)
     if not os.path.exists(test_file):
-        FileHelper.createTrainFile(FileHelper.categories, directory="test/{}/{}".format(ontology,type), name=test_file)
+        FileHelper.createTrainFile(classes, directory="test/{}/{}".format(ontology,type), name=test_file)
 
     return train_file,test_file
 

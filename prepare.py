@@ -89,7 +89,11 @@ def build_data_train(path='.', filepath='labeledTrainData.tsv', vocab_file=None,
             f.readline()
 
         for i, line in enumerate(f):
-            rating, review = line.strip().split('\t')
+            if i >= len(reviews_text) :
+                break
+
+            line = line.strip().split('\t')
+            rating, review = line[0], ' '.join(line[1:])
 
             # clean the review
             review = clean_string(review)
