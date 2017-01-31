@@ -14,7 +14,7 @@ def concat(folder, ontology, type, nclass):
                 with open(f) as ff:
                     for line in ff:
                         if not line.isspace() and len(line.split("\t")) == 3:
-                            writer.write(line)
+                            writer.write(line+"\n")
                         else:
                             print(line, 'is space')
     return train_file
