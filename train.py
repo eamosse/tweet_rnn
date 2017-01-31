@@ -218,6 +218,7 @@ if args.use_w2v:
 else:
     init_emb = Uniform(-0.1 / embedding_dim, 0.1 / embedding_dim)
 
+print(embedding_dim)
 # initialization
 g_uni = GlorotUniform()
 rlayer = None
