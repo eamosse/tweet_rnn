@@ -51,6 +51,14 @@ import numpy as np
 import os
 import preprocessing
 
+
+# Stop if validation error ever increases from epoch to epoch
+def stop_func(s, v):
+    if s is None:
+        return (v, False)
+
+    return (min(v, s), v > s)
+
 def get_google_word2vec_W(fname, vocab, vocab_size=1000000, index_from=3):
     """
     Extract the embedding matrix from the given word2vec binary file and use this
@@ -248,7 +256,11 @@ if rlayer:
 
     # configure callbacks
     callbacks = Callbacks(model, eval_set=valid_set, **args.callback_args)
-
+    # configure callbacks
+    if args.callback_args['eval_freq'] is None:
+        args.callback_args['eval_freq'] = 1
+    callbacks.add_early_stop_callback(stop_func)
+    callbacks.add_save_best_state_callback(os.path.join(args.data_dir, "{}_{}_best_state.pkl".format(args.ontology, args.type, args.clazz)))
     # train model
     model.fit(train_set,
               optimizer=optimizer,
