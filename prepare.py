@@ -94,7 +94,6 @@ def build_data_train(path='.', filepath='labeledTrainData.tsv', vocab_file=None,
             if i >= len(reviews_text):
                 break
 
-            print(line)
 
             #line = line.strip().split('\t')
             _id, rating, review = line.strip().split('\t')#line[0], ' '.join(line[1:])
@@ -170,8 +169,8 @@ def build_data_train(path='.', filepath='labeledTrainData.tsv', vocab_file=None,
         for i in range(nsamples):
             text = reviews_text[i]['text']
             y = int(reviews_text[i]['y'])
-            split = reviews_text[i]['split']
-            text_int = [y] + [vocab[t] for t in text.strip().split()]
+            split = reviews_text[i]['split'] #if 'split' in reviews_text[i] else False
+            text_int = [y] + [vocab[t] for t in text.strip().split() if t in vocab]
             if split:
                 reviews_train[ntrain] = text_int
                 ntrain += 1
@@ -194,4 +193,4 @@ def build_data_train(path='.', filepath='labeledTrainData.tsv', vocab_file=None,
         neon_logger.display("vocabulary from IMDB dataset is saved into {}".format(fname_vocab))
         pickle.dump((vocab, rev_vocab), open(fname_vocab, 'wb'), 2)
 
-    return fname_h5, fname_vocab
+    return fname_h5, fname_vocab, vocab

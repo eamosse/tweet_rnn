@@ -181,7 +181,7 @@ print(train_file,test_file)
 
 
 # get the preprocessed and tokenized data
-train_file_h5, fname_vocab = build_data_train(filepath=train_file,
+train_file_h5, _, vocab = build_data_train(filepath=train_file,
                                               vocab_file="{}.vocab".format(train_file), skip_headers=False, train_ratio=0.9)
 #parse the training file
 reviews,train_set, valid_set = parseData(train_file_h5)
@@ -189,9 +189,9 @@ clazz = reviews.attrs['class_distribution']
 
 
 #parse the test file
-test_file_h5, _ = build_data_train(filepath=test_file,
+test_file_h5, fname_vocab, vocab = build_data_train(filepath=test_file,
                                    vocab_file="{}.vocab".format(test_file),
-                                   skip_headers=False, train_ratio=1.0, clazz=clazz)
+                                   skip_headers=False, train_ratio=1.0, clazz=clazz, vocab=vocab)
 
 test_set= parseData(test_file_h5, valid=False)
 
