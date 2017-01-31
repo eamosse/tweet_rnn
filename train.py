@@ -66,7 +66,7 @@ def get_google_word2vec_W(fname, vocab, vocab_size=1000000, index_from=3):
     header = f.readline()
     vocab1_size, embedding_dim = list(map(int, header.split()))
     binary_len = np.dtype('float32').itemsize * embedding_dim
-    vocab_size = min(len(vocab) + index_from, vocab_size)
+    #vocab_size = min(len(vocab) + index_from, vocab_size)
     W = np.zeros((vocab_size, embedding_dim))
 
     found_words = {}
@@ -112,8 +112,7 @@ parser.add_argument('-t', '--type',
                     help='Replacement strategy')
 
 parser.add_argument('-n', '--clazz',
-                    default=2,
-                    choices = [2,8],
+                    default=8,
                     help='Model to train 2 = Binary, 8 = Multiclass')
 
 parser.add_argument('--rlayer_type', default='lstm',
@@ -128,7 +127,7 @@ parser.add_argument('--use_w2v', action='store_true',
                     help='use downloaded Google Word2Vec')
 
 parser.add_argument('--w2v',
-                    default='dbpedia_generic.bin',
+                    default='/user/aedouard/home/Documents/_dev/event_detection/word_embedding/dbpedia_generic_merged.bin',
                     help='the pre-built Word2Vec')
 args = parser.parse_args()
 
@@ -136,7 +135,7 @@ args = parser.parse_args()
 # hyperparameters
 hidden_size = 128
 embedding_dim = 128
-vocab_size = 20000
+vocab_size = 3000000
 sentence_length = 24
 batch_size = 128
 gradient_limit = 5
@@ -175,8 +174,10 @@ def parseData(_file, valid=True):
 be = gen_backend(**extract_valid_args(args, gen_backend))
 
 
-train_file, test_file = preprocessing.create(args.ontology, args.type, args.clazz)
+train_file = "{}_{}_{}_train.tsv".format(args.ontology, args.type, args.clazz)
+test_file = "{}_{}_{}_test.tsv".format(args.ontology, args.type, args.clazz)
 
+print(train_file,test_file)
 
 
 # get the preprocessed and tokenized data
@@ -189,8 +190,12 @@ clazz = reviews.attrs['class_distribution']
 
 #parse the test file
 test_file_h5, _ = build_data_train(filepath=test_file,
-                                              vocab_file="{}.vocab".format(test_file), skip_headers=False, train_ratio=1.0, clazz=clazz)
+                                   vocab_file="{}.vocab".format(test_file),
+                                   skip_headers=False, train_ratio=1.0, clazz=clazz)
+
 test_set= parseData(test_file_h5, valid=False)
+
+neon_logger.display("Loading the Word2Vec vectors:")
 
 # play around with google-news word vectors for init
 if args.use_w2v:

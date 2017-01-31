@@ -23,6 +23,7 @@ from neon.data.text_preprocessing import clean_string  # noqa
 from neon.util.compat import pickle  # noqa
 from helper import FileHelper
 
+__classes = []
 
 
 def build_data_train(path='.', filepath='labeledTrainData.tsv', vocab_file=None,
@@ -39,6 +40,9 @@ def build_data_train(path='.', filepath='labeledTrainData.tsv', vocab_file=None,
     Datasets may fit entirely in memory as numpy as array
 
     """
+    #__classes.extend(FileHelper.binaries)
+    __classes.extend(FileHelper.categories)
+    #__classes.append('undefined')
 
     if not os.path.exists(filepath):
         FileHelper.generateDataFile()
@@ -49,8 +53,6 @@ def build_data_train(path='.', filepath='labeledTrainData.tsv', vocab_file=None,
     else:
         fname_vocab = vocab_file
 
-
-    print(fname_h5, fname_vocab)
 
     if not os.path.exists(fname_h5) or not os.path.exists(fname_vocab):
         # create the h5 store - NOTE: hdf5 is row-oriented store and we slice rows
@@ -89,12 +91,12 @@ def build_data_train(path='.', filepath='labeledTrainData.tsv', vocab_file=None,
             f.readline()
 
         for i, line in enumerate(f):
-            if i >= len(reviews_text) :
+            if i >= len(reviews_text):
                 break
 
-            line = line.strip().split('\t')
-            rating, review = line[0], ' '.join(line[1:])
-
+            #line = line.strip().split('\t')
+            _id, rating, review = line.strip().split('\t')#line[0], ' '.join(line[1:])
+            rating = __classes.index(rating)
             # clean the review
             review = clean_string(review)
             review_words = review.strip().split()
