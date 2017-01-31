@@ -135,7 +135,7 @@ args = parser.parse_args()
 # hyperparameters
 hidden_size = 128
 embedding_dim = 128
-vocab_size = 3000000
+vocab_size = 300000
 sentence_length = 24
 batch_size = 128
 gradient_limit = 5
