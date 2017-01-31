@@ -94,6 +94,8 @@ def build_data_train(path='.', filepath='labeledTrainData.tsv', vocab_file=None,
             if i >= len(reviews_text):
                 break
 
+            print(line)
+
             #line = line.strip().split('\t')
             _id, rating, review = line.strip().split('\t')#line[0], ' '.join(line[1:])
             rating = __classes.index(rating)
