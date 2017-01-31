@@ -209,7 +209,7 @@ neon_logger.display("Loading the Word2Vec vectors:")
 if args.use_w2v:
     w2v_file = args.w2v
     vocab, rev_vocab = pickle.load(open(fname_vocab, 'rb'))
-    init_emb_np, embedding_dim, vocab_size = get_google_word2vec_W(w2v_file, vocab,
+    init_emb_np, _, vocab_size = get_google_word2vec_W(w2v_file, vocab,
                                                           vocab_size=vocab_size, index_from=3)
     neon_logger.display(
         "Done loading the Word2Vec vectors: embedding size - {} {}".format(embedding_dim,vocab_size))
