@@ -141,12 +141,12 @@ args = parser.parse_args()
 
 
 # hyperparameters
-hidden_size = 128
-embedding_dim = 128
+hidden_size = 56
+embedding_dim = 56
 vocab_size = 300000
 sentence_length = 24
-batch_size = 128
-gradient_limit = 5
+batch_size = 512
+gradient_limit = 2
 clip_gradients = True
 num_epochs = args.epochs
 embedding_update = True
